@@ -175,7 +175,10 @@ public class VibeaseController extends BluetoothGattCallback {
         if (state == STATE.KEY_EXCHANGE) {
             String payload = new String(msg.descrambled);
             if (payload.startsWith("HS=")) {
-                KEY_HS = payload.substring(3);
+                // For some reason, they ignore the last byte of KEY_HS.
+                // We can emulate this by just ignoring that byte.
+                KEY_HS = payload.substring(3,payload.length()-1);
+
                 ui.Write("HS Key: " + KEY_HS);
                 ui.Write("Setup completed!");
                 state = STATE.READY;
