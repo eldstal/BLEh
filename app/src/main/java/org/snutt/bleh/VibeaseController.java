@@ -14,7 +14,8 @@ public class VibeaseController extends BluetoothGattCallback {
 
     private final BluetoothGatt gattServer;
 
-    private String KEY_HS = "";
+    private String KEY_TX = "";
+    private String KEY_RX = "";
 
     // The characteristic used for commands and responses
     private BluetoothGattCharacteristic cmd_write;
@@ -25,6 +26,7 @@ public class VibeaseController extends BluetoothGattCallback {
     private VibeaseUtils.Msg current_rx = new Msg();
     private VibeaseUtils.Msg current_tx = null;
 
+
     public enum STATE {
         PAIRING,
         IDENTIFY,
@@ -32,10 +34,20 @@ public class VibeaseController extends BluetoothGattCallback {
         KEY_EXCHANGE,
         READY,
         FAILED
-
     };
 
+    public enum VIBE {
+        STOPPED,
+        STATIC,
+        PATTERN
+    }
+
+    private int intensity = 0;
+    private int duration = 0;
+
     private STATE state;
+
+    private VIBE vibration;
 
     //
     // The pairing and set-up follows these methods
@@ -48,6 +60,10 @@ public class VibeaseController extends BluetoothGattCallback {
 
     public VibeaseController(BluetoothDevice dev, VibeaseActivity ui) {
         state = STATE.PAIRING;
+        vibration = VIBE.STOPPED;
+
+        this.KEY_RX = VibeaseUtils.KEY2;
+        this.KEY_TX = VibeaseUtils.KEY2;        // Updated once we receive KEY_HS from the device.
 
         this.ui = ui;
 
@@ -133,21 +149,14 @@ public class VibeaseController extends BluetoothGattCallback {
             state = STATE.KEY_EXCHANGE;
 
             ui.Write("Performing key exchange...");
-/*
+
             // If done properly, this should scramble and encode to "$aGK=!"
-            VibeaseUtils.Msg getkey = new VibeaseUtils.Msg(CMD_KEY_EXCHANGE, PFX_KEY_EXCHANGE, KEY2);
+            VibeaseUtils.Msg getkey = new VibeaseUtils.Msg(CMD_KEY_EXCHANGE, PFX_KEY_EXCHANGE, KEY_RX);
             for (String p : getkey.packets) {
                 ui.Write("Scrambled keyex command as " + p);
             }
             Send(getkey);
- */
 
-            // Hardcoded key exchange command that has worked fine...
-            cmd_write.setValue("$aGk=!".getBytes());
-            if (!gattServer.writeCharacteristic(cmd_write)) {
-                ui.Write("Failed write when attempting key exchange.");
-                state = STATE.FAILED;
-            }
 
         }
     }
@@ -156,7 +165,7 @@ public class VibeaseController extends BluetoothGattCallback {
     @Override
     public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
         super.onCharacteristicWrite(gatt, characteristic, status);
-        ui.Write("Write to " + characteristic.getUuid().toString() + " status: " + status);
+        //ui.Write("Write to " + characteristic.getUuid().toString() + " status: " + status);
     }
 
     @Override
@@ -165,7 +174,7 @@ public class VibeaseController extends BluetoothGattCallback {
         // This is how the vibrator responds to our writes.
 
         if (!current_rx.AddPacket(characteristic.getValue(), KEY2)) {
-            ui.Write("Incomplete message...");
+            //ui.Write("Incomplete message...");
             return;
         }
 
@@ -177,16 +186,18 @@ public class VibeaseController extends BluetoothGattCallback {
             if (payload.startsWith("HS=")) {
                 // For some reason, they ignore the last byte of KEY_HS.
                 // We can emulate this by just ignoring that byte.
-                KEY_HS = payload.substring(3,payload.length()-1);
+                KEY_TX = payload.substring(3,payload.length()-1);
 
-                ui.Write("HS Key: " + KEY_HS);
+                ui.Write("HS Key: " + KEY_TX);
                 ui.Write("Setup completed!");
                 state = STATE.READY;
+
+                RequestStatus();
             }
         } else if (state == STATE.READY) {
 
             // TODO: Handle msg
-            ui.Write("RX message: " + new String(msg.descrambled));
+            ui.Write("RX message: " + msg.prefix + "  " + new String(msg.descrambled));
         }
     }
 
@@ -204,7 +215,7 @@ public class VibeaseController extends BluetoothGattCallback {
     public boolean Send(Msg msg) {
 
         for (String p : msg.packets) {
-            ui.Write("TX: " + p);
+            //ui.Write("TX: " + p);
             cmd_write.setValue(p.getBytes());
             if (!gattServer.writeCharacteristic(cmd_write)) {
                 return false;
@@ -215,7 +226,47 @@ public class VibeaseController extends BluetoothGattCallback {
     }
 
 
-    public void ToggleVibration() {
+    //
+    // Things you can do with a vibrator
+    //
+    //
+    //
+
+
+    public void StopVibration() {
+        Send(new Msg(CMD_STOP_VIBE, PFX_CMD, KEY_TX));
+        vibration = VIBE.STOPPED;
+    }
+
+    public void ChangeIntensity() {
+        intensity = (intensity + 1) % 10;
+        doVibe();
+    }
+
+    public void ChangeDuration() {
+        duration = (duration + 100) % 1000;
+        doVibe();
+    }
+
+    private void doVibe() {
+        if (state != STATE.READY) return;
+        ui.Write("Vibe intensity: " + intensity + "  duration: " + duration + "ms");
+
+        // A simple pulsating pattern
+        String pattern = VibeCommand(intensity, duration)
+                         + "," + VibeCommand(1, 300);
+
+        Send(new Msg(pattern, PFX_CMD, KEY_TX));
+        vibration = VIBE.PATTERN;
+    }
+
+
+    public void RequestStatus() {
+        if (state != STATE.READY) return;
+
+        Send(new Msg(CMD_STATUS_QUERY, PFX_STATUS_QUERY, KEY_RX));
+
+        // TODO: Figure out what the response actually means...
 
     }
 }

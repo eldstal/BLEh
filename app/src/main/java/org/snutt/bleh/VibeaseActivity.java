@@ -4,13 +4,8 @@ import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
-import android.bluetooth.BluetoothGattServer;
-import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -22,15 +17,11 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.os.Handler;
-import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.TextView;
-
-import java.util.List;
-import java.util.UUID;
 
 public class VibeaseActivity extends AppCompatActivity {
 
@@ -105,7 +96,9 @@ public class VibeaseActivity extends AppCompatActivity {
         txtLog = (TextView) findViewById(R.id.txtLog);
         Button btnScan = (Button) findViewById(R.id.btnScan);
         Button btnPair = (Button) findViewById(R.id.btnPair);
-        Button btnAction = (Button) findViewById(R.id.btnAction);
+        Button btnIntensity = (Button) findViewById(R.id.btnIntensity);
+        Button btnDuration = (Button) findViewById(R.id.btnDuration);
+        Button btnStop = (Button) findViewById(R.id.btnStop);
 
         this.handler = new Handler();
 
@@ -136,14 +129,34 @@ public class VibeaseActivity extends AppCompatActivity {
             }
         });
 
-        btnAction.setOnClickListener(new View.OnClickListener() {
+        btnIntensity.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (controller != null) {
-                    controller.ToggleVibration();
+                    controller.ChangeIntensity();
                 }
             }
         });
+
+        btnDuration.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (controller != null) {
+                    controller.ChangeDuration();
+                }
+            }
+        });
+
+        btnStop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (controller != null) {
+                    controller.StopVibration();
+                }
+            }
+        });
+
+        scanLeDevice(true);
     }
 
     @Override

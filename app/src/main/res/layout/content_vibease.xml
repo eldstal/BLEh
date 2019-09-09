@@ -5,9 +5,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:paddingEnd="@dimen/text_margin"
+    android:paddingStart="@dimen/text_margin"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context=".VibeaseActivity"
-    tools:showIn="@layout/activity_vibease" >
+    tools:showIn="@layout/activity_vibease">
 
     <Button
         android:id="@+id/btnScan"
@@ -22,10 +24,30 @@
         android:text="Pair" />
 
     <Button
-        android:id="@+id/btnAction"
+        android:id="@+id/btnStop"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Do something!" />
+        android:text="Stop" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnIntensity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Intensity" />
+
+        <Button
+            android:id="@+id/btnDuration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Duration" />
+    </LinearLayout>
 
     <ScrollView
         android:layout_width="match_parent"

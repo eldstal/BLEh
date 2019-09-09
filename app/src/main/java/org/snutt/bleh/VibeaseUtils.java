@@ -21,8 +21,16 @@ public class VibeaseUtils {
     public static final UUID UUID_CHAR_CMD_ALT = UUID.fromString("0002a4d-0000-1000-8000-00805f9b34fb");
     public static final UUID UUID_DESC_NOTIF  = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
 
+
+    // Some known static commands and their expected prefixes
     public static final String PFX_KEY_EXCHANGE = "$";
     public static final byte[] CMD_KEY_EXCHANGE = { 'S', 0x1b };
+
+    public static final String PFX_STATUS_QUERY = "$";
+    public static final byte[] CMD_STATUS_QUERY = { 0x20, 0x45 };
+
+    public static final String PFX_CMD = "*";
+    public static final byte[] CMD_STOP_VIBE = "0500,0500".getBytes();
 
     // Usually applied with KEY2.
     public static byte[] Descramble(byte[] cryptext) { return Descramble(cryptext, KEY2); }
@@ -51,6 +59,24 @@ public class VibeaseUtils {
 
 
 
+    public static String VibeCommand(int intensity, int duration) {
+
+        intensity = StrictMath.min(intensity, 9);
+        intensity= StrictMath.max(intensity, 0);
+
+        duration = StrictMath.min(duration, 999);
+        duration = StrictMath.max(duration, 0);
+
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(intensity);
+        if (duration < 100) sb.append("0");
+        if (duration < 10) sb.append("0");
+        sb.append(duration);
+
+        return sb.toString();
+    }
 
 
     public static class Msg {
@@ -83,8 +109,14 @@ public class VibeaseUtils {
             packets.add(payload);
             if (payload.endsWith("!")) {
                 defragment();
-                decode();
-                descramble(key);
+
+                if (prefix.equals("%")) {
+                    // These messages are only fragmented, nothing else.
+                    this.descrambled = this.joined.getBytes();
+                } else {
+                    decode();
+                    descramble(key);
+                }
 
                 return true;
             }
@@ -141,6 +173,10 @@ public class VibeaseUtils {
         // available in packets[].
         // prefix must be a single character.
         // It's been known to be $ and * under different circumstances.
+        public Msg(String payload, String prefix, String scramble_key) {
+            this(payload.getBytes(), prefix, scramble_key);
+        }
+
         public Msg(byte[] payload, String prefix, String scramble_key) {
             this.descrambled = payload;
             this.prefix = prefix;
