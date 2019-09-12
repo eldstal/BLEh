@@ -48,7 +48,8 @@ public class VibeaseActivity extends AppCompatActivity {
                                      byte[] scanRecord) {
                     if (device.getName() == null) return;
 
-                    if (device.getName().contains("VIBEASE")) {
+                    if (device.getName().contains("VIBEASE")||
+                            device.getName().contains("ESTHESIA")) {
                         VibeaseActivity.this.Write("FOUND: " + device.getAddress() + "   " + device.getName());
                         VibeaseActivity.this.dev = device;
                         VibeaseActivity.this.scanLeDevice(false);
